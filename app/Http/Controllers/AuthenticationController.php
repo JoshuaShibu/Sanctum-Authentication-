@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
@@ -25,22 +27,20 @@ class AuthenticationController extends Controller
     // this method adds new users
     public function createAccount(Request $request)
     {
-        // $attr = $request->validate([
-        //     'first_name' => 'required|string|max:255',
-        //     'last_name' => 'required|string|max:255',
-        //     'email' => 'required|string|email|unique:users,email',
-        //     'password' => 'required|string|min:6|'
-        // ],
-        // [
-        //     'required' => 'This field is required.',
-        //     'first_name' => 'first name is required',
-        //     'last_name' => 'last name is required',
-        //     'email' => 'email is required',
-        //     'password' => 'password',
-        // ]);
-
-        Log::info($request);
-        Log::info($request->get('first_name'));
+        $attr = $request->validate([
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required'
+        ],
+        [
+            'required' => 'This field is required.',
+            'first_name' => 'first name is required',
+            'last_name' => 'last name is required',
+            'email.required' => 'email is required',
+            'email.unique' => 'email already exists',
+            'password.required' => 'password is required',
+        ]);
 
         $user = User::create([
             'first_name' => $request->get('first_name'),
@@ -72,8 +72,8 @@ class AuthenticationController extends Controller
         $user = User::where('email',  $attr['email'])->first();
 
         //check password
-        if (!$user || !Hash::check($attr['password'], $user->password)){
-            return $this->miscHelper->returnError('Credentials not match', 401);
+        if (empty($user)|| !Hash::check($attr['password'], $user->password)){
+            return $this->miscHelper->returnValidationError('No User found or your credentials are incorrect.', 422);
         }
 
         return $this->miscHelper->returnPayload([
